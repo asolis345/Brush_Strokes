@@ -13,7 +13,7 @@ from tqdm import tqdm
 class EnsembleClassifier:
 
     model_names = ['angel_kanji_model', 'john_kanji_model', 'justin_kanji_model']
-    model_name_pattern = '*kanji*'
+    model_name_pattern = '*model*'
     trained_models = {}
     missclassifications = {}
     y_true = []
@@ -25,13 +25,13 @@ class EnsembleClassifier:
 
         for name in glob(os.path.join(working_dir, self.model_name_pattern)):
             model_dir = os.path.join(working_dir, name)
-            if os.path.isdir(model_dir):
+            try:
                 self.trained_models[name] = models.load_model(model_dir)
                 print(f'LOADING MODEL: {name}\n')
                 self.trained_models[name].summary()
                 print('')
-            else:
-                print(f"Invalid model name {name}")
+            except Exception as e:
+                print(e)
 
 
     def predict(self, element):
@@ -68,7 +68,7 @@ class EnsembleClassifier:
                                 index=[i for i in validation_data.class_names], 
                                 columns=[i for i in validation_data.class_names])
 
-        plt.figure(figsize=(20,20))
+        plt.figure(figsize=(40,40))
         ax = sns.heatmap(df_cm, annot=True, vmax=8)
         ax.set(xlabel="Predicted", ylabel="True", title=f'Ensemble Model Confusion Matrix for: {len(validation_data.class_names)} classes')
         ax.xaxis.tick_top()
@@ -89,13 +89,13 @@ class EnsembleClassifier:
 
             self.plot_image(element.numpy()[0].astype("uint8"), true_label)
 
-            if i >= 4:
+            if i >= 10:
                 break
     
 
     def plot_image(self, image, label):
         plt.figure(figsize=(3, 3))
-        plt.imshow(image)
+        plt.imshow(image, cmap='gray', vmin=0, vmax=255)
         plt.title(label)
         plt.axis("off")
         plt.show()
@@ -111,16 +111,17 @@ class EnsembleClassifier:
 
 if __name__ == "__main__":
 
-    new_kkanji_midterm_dataset_val = tf.keras.utils.image_dataset_from_directory(
-                                        './Code/datasets/midterm_dataset',
+    new_kkanji_class_final_dataset_val = tf.keras.utils.image_dataset_from_directory(
+                                        './Code/datasets/class_final_dataset',
                                         validation_split=0.3,
                                         subset="validation",
                                         seed=132,
                                         image_size=(64, 64),
+                                        color_mode = "grayscale",
                                         batch_size=1)
 
-    my_ensemble_model = EnsembleClassifier('./Code/trained_models')
-    # my_ensemble_model.demo(new_kkanji_midterm_dataset_val)
+    my_ensemble_model = EnsembleClassifier('./Code/testing_models')
+    # my_ensemble_model.demo(new_kkanji_class_final_dataset_val)
     # print()
-    my_ensemble_model.validate(new_kkanji_midterm_dataset_val)
-    # 95.63 accuracy 
+    my_ensemble_model.validate(new_kkanji_class_final_dataset_val)
+    # 96.13% accuracy on validation data
